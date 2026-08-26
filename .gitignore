@@ -4,7 +4,7 @@ out/
 .env.local
 .env*.local
 .env
-.env*
 next-env.d.ts
 .DS_Store
 *.log
+.env
