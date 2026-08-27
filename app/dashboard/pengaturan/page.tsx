@@ -26,6 +26,7 @@ export default function StoreSettingsPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [description, setDescription] = useState("");
   const [themeColor, setThemeColor] = useState("#2F6B4F");
+  const [slug, setSlug] = useState("");
   const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export default function StoreSettingsPage() {
         setDescription(store.description ?? "");
         setThemeColor(store.theme_color ?? "#2F6B4F");
         setExistingLogoUrl(store.logo_url);
+        setSlug(store.slug);
       }
       setLoaded(true);
     }
@@ -110,12 +112,19 @@ export default function StoreSettingsPage() {
         description: description.trim() || null,
         theme_color: themeColor,
         logo_url,
+        slug,
       })
       .eq("id", storeId);
 
     setLoading(false);
     if (error) {
-      setMessage({ type: "error", text: "Gagal menyimpan perubahan. Coba lagi." });
+      setMessage({
+        type: "error",
+        text:
+          error.code === "23505"
+            ? "Link ini sudah dipakai toko lain. Coba yang lain."
+            : "Gagal menyimpan perubahan. Coba lagi.",
+      });
     } else {
       setMessage({ type: "success", text: "Pengaturan toko berhasil disimpan!" });
     }
@@ -193,6 +202,21 @@ export default function StoreSettingsPage() {
         </div>
 
         {/* NAMA TOKO */}
+        <div>
+          <label className="mb-1 block text-sm font-medium text-ink">
+            Link toko
+          </label>
+          <div className="flex items-center gap-1">
+            <input
+              required
+              value={slug}
+              onChange={(e) =>
+                setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))
+              }
+              className="input-field"
+            />
+          </div>
+        </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-ink">
             Nama Toko <span className="text-clay">*</span>

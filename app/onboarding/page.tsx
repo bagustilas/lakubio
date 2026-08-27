@@ -8,10 +8,8 @@ function slugify(text: string) {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 30); // Batasi 30 char agar + 5 char random <= 40 char constraint database
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 40);
 }
 
 export default function OnboardingPage() {
@@ -213,7 +211,7 @@ export default function OnboardingPage() {
             />
             {storeName && (
               <p className="mt-1.5 text-[11px] text-ink/50">
-                Link toko kamu nanti: <span className="font-mono text-moss font-semibold">lakubio.id/{previewSlug}-xxxx</span>
+                Link toko kamu nanti: <span className="font-mono text-moss font-semibold">lakubio.id/{previewSlug}</span>
               </p>
             )}
           </div>
@@ -266,9 +264,6 @@ export default function OnboardingPage() {
               Harga Produk (Rp)
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-3 text-sm font-semibold text-ink/50">
-                Rp
-              </span>
               <input
                 type="number"
                 min={0}
