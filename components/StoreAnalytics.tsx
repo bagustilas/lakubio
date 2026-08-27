@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 
 type Store = {
   id: string;
@@ -16,6 +15,17 @@ type ViewRecord = {
   referrer?: string | null;
 };
 
+const SAMPLE_VIEWS: ViewRecord[] = [
+  { id: "1", created_at: new Date(Date.now() - 6 * 86400000).toISOString(), referrer: "instagram.com" },
+  { id: "2", created_at: new Date(Date.now() - 5 * 86400000).toISOString(), referrer: "tiktok.com" },
+  { id: "3", created_at: new Date(Date.now() - 4 * 86400000).toISOString(), referrer: "whatsapp" },
+  { id: "4", created_at: new Date(Date.now() - 3 * 86400000).toISOString(), referrer: "instagram.com" },
+  { id: "5", created_at: new Date(Date.now() - 2 * 86400000).toISOString(), referrer: "instagram.com" },
+  { id: "6", created_at: new Date(Date.now() - 1 * 86400000).toISOString(), referrer: "direct" },
+  { id: "7", created_at: new Date().toISOString(), referrer: "instagram.com" },
+  { id: "8", created_at: new Date().toISOString(), referrer: "whatsapp" },
+];
+
 export default function StoreAnalytics({
   store,
   views,
@@ -23,28 +33,16 @@ export default function StoreAnalytics({
   store: Store;
   views: ViewRecord[];
 }) {
-  // Demo / Simulation mode toggle so users can preview the Pro experience
   const [demoPro, setDemoPro] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const isPro = store.is_pro || demoPro;
 
-  // Process data for last 7 days
   const { totalViews, todayViews, weekViews, chartDays, referrers } = useMemo(() => {
-    // If empty in development, provide realistic sample numbers for demonstration
-    const effectiveViews =
-      views.length > 0
-        ? views
-        : [
-            { id: "1", created_at: new Date(Date.now() - 6 * 86400000).toISOString(), referrer: "instagram.com" },
-            { id: "2", created_at: new Date(Date.now() - 5 * 86400000).toISOString(), referrer: "tiktok.com" },
-            { id: "3", created_at: new Date(Date.now() - 4 * 86400000).toISOString(), referrer: "whatsapp" },
-            { id: "4", created_at: new Date(Date.now() - 3 * 86400000).toISOString(), referrer: "instagram.com" },
-            { id: "5", created_at: new Date(Date.now() - 2 * 86400000).toISOString(), referrer: "instagram.com" },
-            { id: "6", created_at: new Date(Date.now() - 1 * 86400000).toISOString(), referrer: "direct" },
-            { id: "7", created_at: new Date().toISOString(), referrer: "instagram.com" },
-            { id: "8", created_at: new Date().toISOString(), referrer: "whatsapp" },
-          ];
+    // Selama toko belum Pro, selalu pakai data dummy (baik masih di-blur
+    // maupun saat user klik "Pratinjau Pro"). Data asli baru dipakai
+    // begitu toko benar-benar sudah Pro.
+    const effectiveViews = store.is_pro ? views : SAMPLE_VIEWS;
 
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
@@ -60,7 +58,6 @@ export default function StoreAnalytics({
       "Tautan Langsung / Lainnya": 0,
     };
 
-    // Initialize 7 days
     const daysList: { label: string; date: string; count: number }[] = [];
     const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
@@ -83,7 +80,6 @@ export default function StoreAnalytics({
         dayMap[vDateStr]++;
       }
 
-      // Referrer categorizing
       const ref = (v.referrer || "").toLowerCase();
       if (ref.includes("instagram")) refMap["Instagram"]++;
       else if (ref.includes("tiktok")) refMap["TikTok"]++;
@@ -91,7 +87,6 @@ export default function StoreAnalytics({
       else refMap["Tautan Langsung / Lainnya"]++;
     });
 
-    // Populate day counts
     daysList.forEach((item) => {
       item.count = dayMap[item.date] || 0;
     });
@@ -108,11 +103,10 @@ export default function StoreAnalytics({
       })),
       referrers: Object.entries(refMap),
     };
-  }, [views]);
+  }, [views, store.is_pro]);
 
   return (
     <div className="space-y-6">
-      {/* HEADER & STATUS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -134,7 +128,6 @@ export default function StoreAnalytics({
           </p>
         </div>
 
-        {/* DEMO / PRO TOGGLE BUTTON */}
         <div className="flex items-center gap-2">
           {!store.is_pro && (
             <button
@@ -157,9 +150,7 @@ export default function StoreAnalytics({
         </div>
       </div>
 
-      {/* STATS CONTENT CONTAINER (BLURRED IF NOT PRO) */}
       <div className="relative">
-        {/* NON-PRO BLUR OVERLAY */}
         {!isPro && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 rounded-3xl backdrop-blur-md bg-cream/40 border border-line shadow-floating text-center animate-fadeIn">
             <div className="max-w-md bg-white/95 rounded-2xl p-6 shadow-2xl border border-line">
@@ -197,13 +188,11 @@ export default function StoreAnalytics({
           </div>
         )}
 
-        {/* METRICS CARDS */}
         <div
           className={`grid grid-cols-2 sm:grid-cols-4 gap-3.5 transition-all ${
             !isPro ? "filter blur-[6px] select-none pointer-events-none opacity-60" : ""
           }`}
         >
-          {/* Card 1 */}
           <div className="card">
             <p className="text-[11px] font-bold uppercase tracking-wider text-ink/50">Total Kunjungan</p>
             <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-ink">
@@ -212,7 +201,6 @@ export default function StoreAnalytics({
             <p className="mt-1 text-[10px] text-moss font-semibold">● Sepanjang Waktu</p>
           </div>
 
-          {/* Card 2 */}
           <div className="card">
             <p className="text-[11px] font-bold uppercase tracking-wider text-ink/50">Hari Ini</p>
             <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-moss">
@@ -221,7 +209,6 @@ export default function StoreAnalytics({
             <p className="mt-1 text-[10px] text-ink/40">Pengunjung baru</p>
           </div>
 
-          {/* Card 3 */}
           <div className="card">
             <p className="text-[11px] font-bold uppercase tracking-wider text-ink/50">7 Hari Terakhir</p>
             <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-ink">
@@ -230,7 +217,6 @@ export default function StoreAnalytics({
             <p className="mt-1 text-[10px] text-emerald-600 font-semibold">Trafik mingguan</p>
           </div>
 
-          {/* Card 4 */}
           <div className="card">
             <p className="text-[11px] font-bold uppercase tracking-wider text-ink/50">Rata-rata Harian</p>
             <p className="mt-1 font-display text-2xl sm:text-3xl font-bold text-clay">
@@ -240,7 +226,6 @@ export default function StoreAnalytics({
           </div>
         </div>
 
-        {/* 7-DAY VISUAL BAR CHART */}
         <div
           className={`card mt-5 p-5 transition-all ${
             !isPro ? "filter blur-[6px] select-none pointer-events-none opacity-60" : ""
@@ -258,7 +243,6 @@ export default function StoreAnalytics({
             </span>
           </div>
 
-          {/* BAR CHART */}
           <div className="h-44 flex items-end justify-between gap-2 pt-6 pb-2 border-b border-line/60">
             {chartDays.map((day) => (
               <div key={day.date} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
@@ -279,7 +263,6 @@ export default function StoreAnalytics({
           </div>
         </div>
 
-        {/* TRAFFIC SOURCES */}
         <div
           className={`card mt-5 p-5 transition-all ${
             !isPro ? "filter blur-[6px] select-none pointer-events-none opacity-60" : ""
@@ -312,7 +295,6 @@ export default function StoreAnalytics({
         </div>
       </div>
 
-      {/* UPGRADE MODAL */}
       {showUpgradeModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
@@ -356,15 +338,12 @@ export default function StoreAnalytics({
               </li>
             </ul>
 
-            <div className="mt-6 flex flex-col gap-2.5">
-              <a
-                href={`https://wa.me/6281234567890?text=${encodeURIComponent(
+            <div className="mt-6 flex flex-col gap-2.5"><a href={`https://wa.me/6281234567890?text=${encodeURIComponent(
                   `Halo Admin Lakubio, saya ingin upgrade toko "${store.name}" ke paket Pro seharga Rp45.000/bulan.`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-whatsapp py-3 text-center font-bold"
-              >
+                className="btn-whatsapp py-3 text-center font-bold">
                 💬 Hubungi Admin via WhatsApp
               </a>
               <button
