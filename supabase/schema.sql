@@ -183,3 +183,33 @@ create policy "User login boleh upload file toko"
 create policy "User login boleh update file toko miliknya"
   on storage.objects for update
   using (bucket_id = 'store-assets' and auth.role() = 'authenticated');
+
+-- ------------------------------------------------------------
+-- view untuk mendapatkan view dari toko yang di kunjungi oleh customer
+-- Jalankan bagian ini juga, untuk membuat table views
+-- ------------------------------------------------------------
+
+create table if not exists public.store_views (
+  id uuid primary key default uuid_generate_v4(),
+  store_id uuid not null references public.stores (id) on delete cascade,
+  referrer text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists store_views_store_id_idx on public.store_views (store_id);
+
+alter table public.store_views enable row level security;
+
+create policy "Siapa saja boleh mencatat kunjungan"
+  on public.store_views for insert
+  with check (true);
+
+create policy "Pemilik dapat membaca statistik tokonya"
+  on public.store_views for select
+  using (
+    exists (
+      select 1 from public.stores
+      where stores.id = store_views.store_id
+      and stores.owner_id = auth.uid()
+    )
+  );
