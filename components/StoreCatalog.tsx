@@ -12,6 +12,7 @@ type Store = {
   logo_url: string | null;
   theme_color: string | null;
   is_open: boolean;
+  is_pro: boolean;
 };
 
 type Product = {
@@ -491,14 +492,16 @@ export default function StoreCatalog({
         </div>
       )}
 
-      {/* FOOTER */}
-      <footer className="mt-12 py-6 text-center text-xs text-ink/40">
-        Ditenagai oleh{" "}
-        <a href="/" className="font-semibold text-moss hover:underline">
-          Lakubio
-        </a>{" "}
-        — Bikin Toko Online Mudah
-      </footer>
+      {/* FOOTER — watermark cuma tampil untuk toko yang belum Pro */}
+      {!store.is_pro && (
+        <footer className="mt-12 py-6 text-center text-xs text-ink/40">
+          Ditenagai oleh{" "}
+          <a href="/" className="font-semibold text-moss hover:underline">
+            Lakubio
+          </a>{" "}
+          — Bikin Toko Online Mudah
+        </footer>
+      )}
     </main>
   );
 }
