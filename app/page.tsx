@@ -222,7 +222,7 @@ export default function LandingPage() {
                 <p className="text-xs text-ink/50 mt-0.5">Untuk bisnis yang sedang berkembang</p>
                 <ul className="mt-5 space-y-2 text-xs sm:text-sm text-ink/70 border-t border-line/60 pt-4">
                   <li className="flex items-center gap-2 font-medium text-ink">✓ Produk tanpa batas</li>
-                  <li className="flex items-center gap-2 font-medium text-ink">✓ Dukungan custom domain</li>
+                  <li className="flex items-center gap-2 font-medium text-ink">✓ Bebas ganti link toko kapan saja</li>
                   <li className="flex items-center gap-2">✓ Tanpa watermark Lakubio</li>
                   <li className="flex items-center gap-2">✓ Statistik pengunjung toko</li>
                 </ul>

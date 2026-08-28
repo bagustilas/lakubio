@@ -22,11 +22,12 @@ export default function StoreSettingsPage() {
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [slug, setSlug] = useState("");
+  const [isPro, setIsPro] = useState(false);
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [description, setDescription] = useState("");
   const [themeColor, setThemeColor] = useState("#2F6B4F");
-  const [slug, setSlug] = useState("");
   const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
@@ -49,12 +50,13 @@ export default function StoreSettingsPage() {
 
       if (store) {
         setStoreId(store.id);
+        setSlug(store.slug);
+        setIsPro(store.is_pro ?? false);
         setName(store.name);
         setWhatsapp(store.whatsapp_number);
         setDescription(store.description ?? "");
         setThemeColor(store.theme_color ?? "#2F6B4F");
         setExistingLogoUrl(store.logo_url);
-        setSlug(store.slug);
       }
       setLoaded(true);
     }
@@ -79,7 +81,6 @@ export default function StoreSettingsPage() {
     setLoading(true);
     setMessage(null);
 
-    // Smart WhatsApp normalization
     let normalizedWa = whatsapp.replace(/[^0-9]/g, "");
     if (normalizedWa.startsWith("0")) {
       normalizedWa = "62" + normalizedWa.slice(1);
@@ -104,16 +105,25 @@ export default function StoreSettingsPage() {
       }
     }
 
+    // Payload dasar yang boleh diubah semua user
+    const updatePayload: Record<string, unknown> = {
+      name: name.trim(),
+      whatsapp_number: normalizedWa,
+      description: description.trim() || null,
+      theme_color: themeColor,
+      logo_url,
+    };
+
+    // Slug HANYA disertakan kalau toko sudah Pro — proteksi ganda di luar
+    // sekadar `disabled` pada input, supaya request manual ke API pun
+    // tidak bisa mengubah slug tanpa status Pro.
+    if (isPro) {
+      updatePayload.slug = slug.toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
     const { error } = await supabase
       .from("stores")
-      .update({
-        name: name.trim(),
-        whatsapp_number: normalizedWa,
-        description: description.trim() || null,
-        theme_color: themeColor,
-        logo_url,
-        slug,
-      })
+      .update(updatePayload)
       .eq("id", storeId);
 
     setLoading(false);
@@ -126,6 +136,9 @@ export default function StoreSettingsPage() {
             : "Gagal menyimpan perubahan. Coba lagi.",
       });
     } else {
+      if (isPro) {
+        setSlug((updatePayload.slug as string) ?? slug);
+      }
       setMessage({ type: "success", text: "Pengaturan toko berhasil disimpan!" });
     }
     router.refresh();
@@ -201,22 +214,52 @@ export default function StoreSettingsPage() {
           </div>
         </div>
 
-        {/* NAMA TOKO */}
+        {/* LINK TOKO (SLUG) - FITUR PRO */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-ink">
-            Link toko
-          </label>
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-sm font-medium text-ink">
+              Link toko
+            </label>
+            {!isPro && (
+              <span className="rounded-full bg-clay/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-clay">
+                Fitur Pro
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-1">
+            <span className="text-sm text-ink/40">lakubio.id/</span>
             <input
               required
+              disabled={!isPro}
               value={slug}
               onChange={(e) =>
                 setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))
               }
-              className="input-field"
+              className={`input-field ${!isPro ? "cursor-not-allowed bg-line/40 opacity-70" : ""}`}
             />
           </div>
+          {isPro ? (
+            <p className="mt-1 text-[11px] text-ink/40">
+              Hanya huruf kecil dan angka, tanpa spasi.
+            </p>
+          ) : (
+            <p className="mt-1 text-[11px] text-clay">
+              Upgrade ke Pro untuk mengubah link toko kamu.{" "}
+              
+              <a href={`https://wa.me/6281234567890?text=${encodeURIComponent(
+                  "Halo, saya mau upgrade ke Lakubio Pro untuk ubah link toko."
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline"
+              >
+                Chat kami untuk upgrade
+              </a>
+            </p>
+          )}
         </div>
+
+        {/* NAMA TOKO */}
         <div>
           <label className="mb-1 block text-sm font-medium text-ink">
             Nama Toko <span className="text-clay">*</span>
