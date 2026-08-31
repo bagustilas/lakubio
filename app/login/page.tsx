@@ -21,10 +21,8 @@ export default function LoginPage() {
     setError(null);
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       setError("Email atau kata sandi salah. Coba lagi.");
       return;
     }

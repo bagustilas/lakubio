@@ -120,7 +120,7 @@ export default function OnboardingPage() {
         });
       }
 
-      setLoading(false);
+      //setLoading(false);
       router.push("/dashboard");
       router.refresh();
       return;
