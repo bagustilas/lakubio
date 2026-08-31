@@ -74,6 +74,15 @@ export default function StoreSettingsPage() {
     }
   }
 
+  // Ambil path relatif dari public URL Supabase Storage,
+  // supaya bisa dipakai untuk menghapus file lama.
+  function extractStoragePath(publicUrl: string): string | null {
+    const marker = "/store-assets/";
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    return publicUrl.slice(idx + marker.length);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!storeId) return;
@@ -102,6 +111,14 @@ export default function StoreSettingsPage() {
           .from("store-assets")
           .getPublicUrl(uploaded.path);
         logo_url = publicUrl.publicUrl;
+
+        // Hapus logo lama dari storage supaya tidak menumpuk
+        if (existingLogoUrl) {
+          const oldPath = extractStoragePath(existingLogoUrl);
+          if (oldPath) {
+            await supabase.storage.from("store-assets").remove([oldPath]);
+          }
+        }
       }
     }
 

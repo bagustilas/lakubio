@@ -67,6 +67,15 @@ export default function EditProductPage() {
     }
   }
 
+  // Ambil path relatif dari public URL Supabase Storage,
+  // supaya bisa dipakai untuk menghapus file lama.
+  function extractStoragePath(publicUrl: string): string | null {
+    const marker = "/store-assets/";
+    const idx = publicUrl.indexOf(marker);
+    if (idx === -1) return null;
+    return publicUrl.slice(idx + marker.length);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -75,8 +84,7 @@ export default function EditProductPage() {
     let photo_url = existingPhotoUrl;
 
     if (photoFile && storeId) {
-      const sanitizedName = photoFile.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const filePath = `${storeId}/${Date.now()}-${sanitizedName}`;
+      const filePath = `${storeId}/${Date.now()}-${photoFile.name}`;
       const { data: uploaded, error: uploadError } = await supabase.storage
         .from("store-assets")
         .upload(filePath, photoFile);
@@ -86,6 +94,14 @@ export default function EditProductPage() {
           .from("store-assets")
           .getPublicUrl(uploaded.path);
         photo_url = publicUrl.publicUrl;
+
+        // Hapus foto lama dari storage supaya tidak menumpuk
+        if (existingPhotoUrl) {
+          const oldPath = extractStoragePath(existingPhotoUrl);
+          if (oldPath) {
+            await supabase.storage.from("store-assets").remove([oldPath]);
+          }
+        }
       }
     }
 

@@ -213,3 +213,7 @@ create policy "Pemilik dapat membaca statistik tokonya"
       and stores.owner_id = auth.uid()
     )
   );
+
+  create policy "User login boleh hapus file toko miliknya"
+  on storage.objects for delete
+  using (bucket_id = 'store-assets' and auth.role() = 'authenticated');
