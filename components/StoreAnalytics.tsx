@@ -55,6 +55,7 @@ export default function StoreAnalytics({
       Instagram: 0,
       TikTok: 0,
       WhatsApp: 0,
+      Facebook: 0,
       "Tautan Langsung / Lainnya": 0,
     };
 
@@ -81,9 +82,10 @@ export default function StoreAnalytics({
       }
 
       const ref = (v.referrer || "").toLowerCase();
-      if (ref.includes("instagram")) refMap["Instagram"]++;
-      else if (ref.includes("tiktok")) refMap["TikTok"]++;
-      else if (ref.includes("whatsapp") || ref.includes("wa.me")) refMap["WhatsApp"]++;
+      if (ref.includes("instagram") || ref.includes("ig")) refMap["Instagram"]++;
+      else if (ref.includes("tiktok") || ref.includes("musical_ly") || ref.includes("bytedance")) refMap["TikTok"]++;
+      else if (ref.includes("whatsapp") || ref.includes("wa.me") || ref.includes("wa")) refMap["WhatsApp"]++;
+      else if (ref.includes("facebook") || ref.includes("fb")) refMap["Facebook"]++;
       else refMap["Tautan Langsung / Lainnya"]++;
     });
 

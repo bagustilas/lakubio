@@ -71,6 +71,60 @@ function buildWhatsAppMessage(
   return lines.join("\n");
 }
 
+function detectTrafficSource(): string {
+  if (typeof window === "undefined") return "direct";
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const utmSource = (searchParams.get("utm_source") || "").toLowerCase();
+  const refParam = (searchParams.get("ref") || "").toLowerCase();
+  const sourceParam = (searchParams.get("source") || "").toLowerCase();
+
+  // 1. Cek query param eksplisit (?ref=tiktok, ?utm_source=instagram, dll)
+  const querySource = utmSource || refParam || sourceParam;
+  if (querySource.includes("instagram") || querySource === "ig") return "instagram.com";
+  if (querySource.includes("tiktok") || querySource === "tt") return "tiktok.com";
+  if (querySource.includes("whatsapp") || querySource === "wa") return "whatsapp";
+  if (querySource.includes("facebook") || querySource === "fb") return "facebook.com";
+  if (querySource.includes("twitter") || querySource === "x") return "x.com";
+  if (querySource) return querySource;
+
+  // 2. Cek tracking params platform spesifik di URL
+  if (searchParams.has("igshid") || searchParams.get("theme") === "ig") return "instagram.com";
+  if (searchParams.has("fbclid")) return "facebook.com";
+  if (searchParams.has("tt_medium") || searchParams.has("_r") || searchParams.has("is_from_webapp")) return "tiktok.com";
+
+  // 3. Cek In-App Browser User-Agent (Sangat akurat untuk link yang dibuka dari aplikasi Instagram/TikTok/WhatsApp)
+  const ua = (navigator.userAgent || navigator.vendor || "").toLowerCase();
+  if (ua.includes("instagram")) return "instagram.com";
+  if (ua.includes("tiktok") || ua.includes("musical_ly") || ua.includes("bytedance") || ua.includes("trill")) return "tiktok.com";
+  if (ua.includes("whatsapp")) return "whatsapp";
+  if (ua.includes("fban") || ua.includes("fbav") || ua.includes("fb_iab")) return "facebook.com";
+  if (ua.includes("twitter") || ua.includes("tweetbot")) return "x.com";
+  if (ua.includes("line/")) return "line.me";
+  if (ua.includes("telegram")) return "telegram.org";
+
+  // 4. Cek document.referrer
+  const ref = (document.referrer || "").toLowerCase();
+  if (ref) {
+    if (ref.includes("instagram") || ref.includes("l.instagram.com") || ref.includes("com.instagram")) return "instagram.com";
+    if (ref.includes("tiktok") || ref.includes("musical.ly") || ref.includes("trill")) return "tiktok.com";
+    if (ref.includes("whatsapp") || ref.includes("wa.me") || ref.includes("com.whatsapp")) return "whatsapp";
+    if (ref.includes("facebook") || ref.includes("fb.com") || ref.includes("l.facebook.com")) return "facebook.com";
+    if (ref.includes("twitter") || ref.includes("t.co") || ref.includes("x.com")) return "x.com";
+    if (ref.includes("google")) return "google.com";
+    if (ref.includes("youtube") || ref.includes("youtu.be")) return "youtube.com";
+
+    try {
+      const parsedUrl = new URL(ref);
+      return parsedUrl.hostname;
+    } catch {
+      return ref.slice(0, 100);
+    }
+  }
+
+  return "direct";
+}
+
 export default function StoreCatalog({
   store,
   products,
@@ -96,27 +150,17 @@ export default function StoreCatalog({
       if (!sessionStorage.getItem(sessionKey)) {
         sessionStorage.setItem(sessionKey, "1");
 
-        // 1. Cek query param ?ref=tiktok dulu (paling reliable)
-        const urlParams = new URLSearchParams(window.location.search);
-        const refParam = urlParams.get("ref") || urlParams.get("utm_source");
-
-        // 2. Fallback ke document.referrer kalau tidak ada ref param
-        const documentReferrer =
-          typeof document !== "undefined" ? document.referrer : null;
-
-        // 3. Tentukan sumber final
-        const source = refParam || documentReferrer || null;
+        const detectedSource = detectTrafficSource();
 
         fetch(`/api/views/${store.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            referrer: documentReferrer,
-            source: source, // sumber yang lebih reliable
+            referrer: detectedSource,
+            source: detectedSource,
           }),
         })
           .then((res) => res.json())
-          .then((data) => console.log("response dari /api/views:", data))
           .catch(() => {});
       }
     } catch {
