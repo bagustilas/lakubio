@@ -234,7 +234,7 @@ export default function StoreAnalytics({
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="font-display font-bold text-ink text-base">
-                Grafik Tren Pengunjung (7 Hari Terakhir)
+                Grafik Tren Pengunjung
               </h3>
               <p className="text-xs text-ink/50 mt-0.5">Aktivitas harian calon pembeli yang membuka toko</p>
             </div>

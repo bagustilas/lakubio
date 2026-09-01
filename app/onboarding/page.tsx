@@ -126,10 +126,14 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Generate unique slug
-    const baseSlug = slugify(storeName) || "toko";
-    const randomSuffix = Math.random().toString(36).slice(2, 6);
-    const slug = `${baseSlug}-${randomSuffix}`.slice(0, 40);
+    // Generate slug tanpa spasi dan tanpa nomor acak di belakangnya (contoh: 'jus buah asli' -> 'jusbuahasli')
+    const slug = slugify(storeName) || "tokosaya";
+
+    if (slug.length < 3) {
+      setError("Nama toko terlalu pendek. Minimal 3 karakter huruf/angka untuk tautan toko.");
+      setLoading(false);
+      return;
+    }
 
     const { data: store, error: storeError } = await supabase
       .from("stores")
@@ -150,8 +154,8 @@ export default function OnboardingPage() {
         setError(
           "Gagal otorisasi (RLS): Sesi login belum terverifikasi di Supabase. Silakan nonaktifkan 'Confirm email' di Supabase Authentication Settings atau login kembali."
         );
-      } else if (storeError?.code === "23505" || storeError?.message?.includes("unique")) {
-        setError("Nama atau slug toko ini sudah digunakan. Coba submit kembali dengan nama yang sedikit berbeda.");
+      } else if (storeError?.code === "23505" || storeError?.message?.includes("unique") || storeError?.message?.includes("slug")) {
+        setError(`Tautan lakubio.id/${slug} sudah dipakai oleh toko lain. Silakan ubah nama toko agar tautannya unik.`);
       } else {
         setError(`Gagal membuat toko: ${storeError?.message || "Terjadi kesalahan database."}`);
       }

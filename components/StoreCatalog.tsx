@@ -95,13 +95,29 @@ export default function StoreCatalog({
       const sessionKey = `visited_store_${store.id}`;
       if (!sessionStorage.getItem(sessionKey)) {
         sessionStorage.setItem(sessionKey, "1");
+
+        // 1. Cek query param ?ref=tiktok dulu (paling reliable)
+        const urlParams = new URLSearchParams(window.location.search);
+        const refParam = urlParams.get("ref") || urlParams.get("utm_source");
+
+        // 2. Fallback ke document.referrer kalau tidak ada ref param
+        const documentReferrer =
+          typeof document !== "undefined" ? document.referrer : null;
+
+        // 3. Tentukan sumber final
+        const source = refParam || documentReferrer || null;
+
         fetch(`/api/views/${store.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            referrer: typeof document !== "undefined" ? document.referrer : null,
+            referrer: documentReferrer,
+            source: source, // sumber yang lebih reliable
           }),
-        }).catch(() => {});
+        })
+          .then((res) => res.json())
+          .then((data) => console.log("response dari /api/views:", data))
+          .catch(() => {});
       }
     } catch {
       // Ignore sessionStorage exceptions
