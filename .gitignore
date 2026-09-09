@@ -9,5 +9,3 @@ next-env.d.ts
 *.log
 .env
 supabase/schema.sql
-
-next.config.mjs

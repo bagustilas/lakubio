@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     "order whatsapp otomatis",
     "bio link olshop",
     "alternatif linktree toko online",
+    "link katalog whatsapp gratis",
   ],
   authors: [{ name: "Lakubio" }],
   creator: "Lakubio",
