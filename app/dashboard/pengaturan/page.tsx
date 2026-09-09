@@ -16,6 +16,39 @@ const THEME_PRESETS = [
   { name: "Forest", color: "#166534" },
 ];
 
+const PRESET_PAYMENT_OPTIONS = [
+  {
+    id: "Transfer Bank",
+    name: "Transfer Bank",
+    icon: "🏦",
+    desc: "BCA, Mandiri, BRI, BNI, BSI, atau rekening bank lainnya",
+  },
+  {
+    id: "QRIS",
+    name: "QRIS",
+    icon: "📱",
+    desc: "Scan QR untuk semua e-wallet (GoPay, OVO, Dana, ShopeePay) & m-banking",
+  },
+  {
+    id: "COD (Bayar di Tempat)",
+    name: "COD (Bayar di Tempat)",
+    icon: "📦",
+    desc: "Pelanggan membayar tunai kepada kurir saat pesanan sampai",
+  },
+  {
+    id: "E-Wallet",
+    name: "E-Wallet Langsung",
+    icon: "💳",
+    desc: "Transfer langsung antar nomor akun DANA, OVO, GoPay, atau ShopeePay",
+  },
+  {
+    id: "Ambil di Toko",
+    name: "Ambil di Toko (Self Pick-up)",
+    icon: "🏪",
+    desc: "Pelanggan mengambil dan membayar langsung di gerai fisik tokomu",
+  },
+];
+
 export default function StoreSettingsPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -31,6 +64,13 @@ export default function StoreSettingsPage() {
   const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+
+  const [paymentMethods, setPaymentMethods] = useState<string[]>([
+    "Transfer Bank",
+    "QRIS",
+    "COD (Bayar di Tempat)",
+  ]);
+  const [customMethodInput, setCustomMethodInput] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -57,12 +97,67 @@ export default function StoreSettingsPage() {
         setDescription(store.description ?? "");
         setThemeColor(store.theme_color ?? "#2F6B4F");
         setExistingLogoUrl(store.logo_url);
+        if (Array.isArray(store.payment_methods) && store.payment_methods.length > 0) {
+          setPaymentMethods(store.payment_methods);
+        }
       }
       setLoaded(true);
     }
     loadStore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function togglePaymentMethod(methodName: string) {
+    setPaymentMethods((prev) => {
+      if (prev.includes(methodName)) {
+        if (prev.length <= 1) {
+          setMessage({
+            type: "error",
+            text: "Minimal harus ada 1 metode pembayaran yang aktif.",
+          });
+          return prev;
+        }
+        return prev.filter((m) => m !== methodName);
+      } else {
+        return [...prev, methodName];
+      }
+    });
+  }
+
+  function handleAddCustomMethod(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isPro) {
+      setMessage({
+        type: "error",
+        text: "Fitur menambah metode pembayaran kustom hanya tersedia untuk member Pro.",
+      });
+      return;
+    }
+    const trimmed = customMethodInput.trim();
+    if (!trimmed) return;
+    if (paymentMethods.some((m) => m.toLowerCase() === trimmed.toLowerCase())) {
+      setMessage({
+        type: "error",
+        text: `Metode pembayaran "${trimmed}" sudah ada di daftar.`,
+      });
+      return;
+    }
+    setPaymentMethods((prev) => [...prev, trimmed]);
+    setCustomMethodInput("");
+  }
+
+  function removePaymentMethod(methodName: string) {
+    setPaymentMethods((prev) => {
+      if (prev.length <= 1) {
+        setMessage({
+          type: "error",
+          text: "Minimal harus ada 1 metode pembayaran yang aktif.",
+        });
+        return prev;
+      }
+      return prev.filter((m) => m !== methodName);
+    });
+  }
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
@@ -122,6 +217,26 @@ export default function StoreSettingsPage() {
       }
     }
 
+    if (paymentMethods.length === 0) {
+      setMessage({
+        type: "error",
+        text: "Pilih minimal 1 metode pembayaran yang diaktifkan.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Hanya member Pro yang boleh menyimpan metode kustom tambahan
+    let finalPaymentMethods = paymentMethods;
+    if (!isPro) {
+      finalPaymentMethods = paymentMethods.filter((m) =>
+        PRESET_PAYMENT_OPTIONS.some((opt) => opt.id === m)
+      );
+      if (finalPaymentMethods.length === 0) {
+        finalPaymentMethods = ["Transfer Bank", "QRIS", "COD (Bayar di Tempat)"];
+      }
+    }
+
     // Payload dasar yang boleh diubah semua user
     const updatePayload: Record<string, unknown> = {
       name: name.trim(),
@@ -129,6 +244,7 @@ export default function StoreSettingsPage() {
       description: description.trim() || null,
       theme_color: themeColor,
       logo_url,
+      payment_methods: finalPaymentMethods,
     };
 
     // Slug HANYA disertakan kalau toko sudah Pro — proteksi ganda di luar
@@ -138,10 +254,33 @@ export default function StoreSettingsPage() {
       updatePayload.slug = slug.toLowerCase().replace(/[^a-z0-9]/g, "");
     }
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from("stores")
       .update(updatePayload)
       .eq("id", storeId);
+
+    // Fallback jika kolom payment_methods belum dimigrasikan di DB Supabase
+    if (error && (error.message?.includes("payment_methods") || error.code === "PGRST204")) {
+      delete updatePayload.payment_methods;
+      const retry = await supabase
+        .from("stores")
+        .update(updatePayload)
+        .eq("id", storeId);
+
+      if (!retry.error) {
+        if (isPro) {
+          setSlug((updatePayload.slug as string) ?? slug);
+        }
+        setLoading(false);
+        setMessage({
+          type: "error",
+          text: "Pengaturan dasar berhasil disimpan, tetapi kolom 'payment_methods' belum ada di database Supabase Anda. Jalankan perintah SQL di supabase/schema.sql untuk mengaktifkannya.",
+        });
+        router.refresh();
+        return;
+      }
+      error = retry.error;
+    }
 
     setLoading(false);
     if (error) {
@@ -356,6 +495,175 @@ export default function StoreSettingsPage() {
               className="h-10 w-12 cursor-pointer rounded-lg border border-line bg-transparent"
             />
             <span className="text-xs font-mono text-ink/60">{themeColor}</span>
+          </div>
+        </div>
+
+        {/* METODE PEMBAYARAN */}
+        <div className="border-t border-line/70 pt-5">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <label className="block text-sm font-semibold text-ink">
+                Metode Pembayaran yang Diaktifkan <span className="text-clay">*</span>
+              </label>
+              <p className="mt-0.5 text-xs text-ink/60 leading-relaxed">
+                Pilih metode pembayaran yang diterima toko kamu. Opsi aktif akan muncul bagi pelanggan saat checkout ke WhatsApp.
+              </p>
+            </div>
+            <span className="rounded-full bg-moss/10 px-2.5 py-0.5 text-xs font-bold text-moss border border-moss/20 whitespace-nowrap">
+              {paymentMethods.length} Aktif
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {PRESET_PAYMENT_OPTIONS.map((opt) => {
+              const isActive = paymentMethods.includes(opt.id);
+              return (
+                <div
+                  key={opt.id}
+                  onClick={() => togglePaymentMethod(opt.id)}
+                  className={`flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
+                    isActive
+                      ? "border-moss bg-moss/[0.04] shadow-sm"
+                      : "border-line bg-cream/30 hover:bg-cream/60 opacity-75"
+                  }`}
+                >
+                  <div className="flex items-start gap-3 min-w-0 pr-3">
+                    <span className="text-2xl flex-shrink-0 mt-0.5">{opt.icon}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm font-semibold ${isActive ? "text-moss" : "text-ink"}`}>
+                          {opt.name}
+                        </p>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            isActive
+                              ? "bg-moss text-cream"
+                              : "bg-line/70 text-ink/50"
+                          }`}
+                        >
+                          {isActive ? "Aktif" : "Nonaktif"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-ink/60 mt-0.5">{opt.desc}</p>
+                    </div>
+                  </div>
+
+                  {/* Switch Toggle Visual */}
+                  <div
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                      isActive ? "bg-moss" : "bg-line"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        isActive ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Custom Methods Tag Badges */}
+          {paymentMethods.filter(
+            (m) => !PRESET_PAYMENT_OPTIONS.some((opt) => opt.id === m)
+          ).length > 0 && (
+            <div className="mt-4 pt-3 border-t border-line/60">
+              <p className="text-xs font-semibold text-ink mb-2">Metode Kustom Tambahan:</p>
+              <div className="flex flex-wrap gap-2">
+                {paymentMethods
+                  .filter(
+                    (m) => !PRESET_PAYMENT_OPTIONS.some((opt) => opt.id === m)
+                  )
+                  .map((custom) => (
+                    <span
+                      key={custom}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-moss/10 border border-moss/20 px-3 py-1 text-xs font-semibold text-moss"
+                    >
+                      <span>✨ {custom}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removePaymentMethod(custom);
+                        }}
+                        className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-moss/20 hover:bg-moss hover:text-white transition text-[10px]"
+                        title="Hapus metode ini"
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Add custom method input - PRO EXCLUSIVE */}
+          <div className="mt-4 pt-3 border-t border-line/60">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-ink">
+                Tambah Metode Pembayaran Lainnya (Opsional)
+              </label>
+              {!isPro && (
+                <span className="rounded-full bg-clay/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-clay">
+                  Fitur Pro
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                disabled={!isPro}
+                value={customMethodInput}
+                onChange={(e) => setCustomMethodInput(e.target.value)}
+                placeholder={
+                  isPro
+                    ? "Contoh: ShopeePay, Kasbon, SeaBank, dll."
+                    : "Khusus member Pro — Contoh: ShopeePay, SeaBank"
+                }
+                className={`input-field py-2 text-xs flex-1 ${
+                  !isPro ? "cursor-not-allowed bg-line/40 opacity-70" : ""
+                }`}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (isPro) handleAddCustomMethod(e);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomMethod}
+                disabled={!isPro || !customMethodInput.trim()}
+                className={`btn-secondary py-2 px-3.5 text-xs whitespace-nowrap ${
+                  !isPro ? "cursor-not-allowed opacity-50" : "disabled:opacity-50"
+                }`}
+              >
+                {!isPro ? "🔒 Fitur Pro" : "+ Tambah"}
+              </button>
+            </div>
+
+            {!isPro ? (
+              <p className="mt-1.5 text-[11px] text-clay">
+                Upgrade ke Pro untuk menambah metode pembayaran kustom tokomu sendiri.{" "}
+                <a
+                  href={`https://wa.me/6281234567890?text=${encodeURIComponent(
+                    "Halo, saya mau upgrade ke Lakubio Pro untuk tambah metode pembayaran kustom."
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline"
+                >
+                  Chat kami untuk upgrade
+                </a>
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] text-ink/50">
+                Ketik nama metode pembayaran dan klik Tambah atau tekan Enter.
+              </p>
+            )}
           </div>
         </div>
 

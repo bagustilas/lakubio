@@ -13,6 +13,7 @@ type Store = {
   theme_color: string | null;
   is_open: boolean;
   is_pro: boolean;
+  payment_methods?: string[] | null;
 };
 
 type Product = {
@@ -23,7 +24,7 @@ type Product = {
   photo_url: string | null;
 };
 
-const PAYMENT_METHODS = ["Transfer Bank", "QRIS", "COD (Bayar di Tempat)"];
+const DEFAULT_PAYMENT_METHODS = ["Transfer Bank", "QRIS", "COD (Bayar di Tempat)"];
 
 function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -137,12 +138,30 @@ export default function StoreCatalog({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const availablePaymentMethods = useMemo(() => {
+    if (Array.isArray(store.payment_methods) && store.payment_methods.length > 0) {
+      return store.payment_methods;
+    }
+    return DEFAULT_PAYMENT_METHODS;
+  }, [store.payment_methods]);
+
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
+  const [paymentMethod, setPaymentMethod] = useState<string>(() => {
+    if (Array.isArray(store.payment_methods) && store.payment_methods.length > 0) {
+      return store.payment_methods[0];
+    }
+    return DEFAULT_PAYMENT_METHODS[0];
+  });
   const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (availablePaymentMethods.length > 0 && !availablePaymentMethods.includes(paymentMethod)) {
+      setPaymentMethod(availablePaymentMethods[0]);
+    }
+  }, [availablePaymentMethods, paymentMethod]);
 
   useEffect(() => {
     try {
@@ -621,7 +640,7 @@ export default function StoreCatalog({
                   Metode Pembayaran
                 </label>
                 <div className="grid grid-cols-1 gap-2">
-                  {PAYMENT_METHODS.map((method) => (
+                  {availablePaymentMethods.map((method) => (
                     <label
                       key={method}
                       className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm cursor-pointer transition ${

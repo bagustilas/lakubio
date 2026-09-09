@@ -21,9 +21,14 @@ create table if not exists public.stores (
   theme_color text default '#2F6B4F',
   is_open boolean not null default true,
   is_pro boolean not null default false,
+  payment_methods text[] default array['Transfer Bank', 'QRIS', 'COD (Bayar di Tempat)'],
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Kolom metode pembayaran untuk toko yang sudah ada sebelumnya
+alter table public.stores
+  add column if not exists payment_methods text[] default array['Transfer Bank', 'QRIS', 'COD (Bayar di Tempat)'];
 
 -- Slug hanya boleh huruf kecil, angka, dan tanda hubung
 alter table public.stores
