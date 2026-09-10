@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Lakubio — Buat Website Toko Online & Bio Link Katalog WhatsApp UMKM",
@@ -28,6 +29,14 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://lakubio.id",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/logo.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "Lakubio — Buat Website Toko Online & Bio Link Katalog WhatsApp UMKM",
     description:
@@ -36,12 +45,21 @@ export const metadata: Metadata = {
     siteName: "Lakubio",
     locale: "id_ID",
     type: "website",
+    images: [
+      {
+        url: "/logo.png",
+        width: 800,
+        height: 800,
+        alt: "Lakubio Logo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Lakubio — Bio Link Katalog WhatsApp untuk UMKM Indonesia",
     description:
       "Satu link katalog untuk semua produk tokomu. Pesanan otomatis masuk WhatsApp rapi, tanpa coding dan 0% biaya potongan.",
+    images: ["/logo.png"],
   },
   robots: {
     index: true,
@@ -219,12 +237,19 @@ export default function LandingPage() {
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-3.5">
             <Link
               href="/"
-              className="group flex items-center gap-2 font-display text-xl sm:text-2xl font-bold tracking-tight text-moss"
+              className="group flex items-center gap-2.5 font-display text-xl sm:text-2xl font-bold tracking-tight text-moss"
               aria-label="Halaman Utama Lakubio"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-moss text-cream font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
-                L
-              </span>
+              <div className="relative h-8 w-8 sm:h-9 sm:w-9 overflow-hidden rounded-xl shadow-sm group-hover:scale-105 transition-transform flex-shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="Lakubio Logo"
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                  priority
+                />
+              </div>
               <span>Lakubio</span>
             </Link>
 
@@ -1169,11 +1194,17 @@ export default function LandingPage() {
               <div className="space-y-3">
                 <Link
                   href="/"
-                  className="flex items-center gap-2 font-display text-xl font-bold text-moss"
+                  className="flex items-center gap-2.5 font-display text-xl font-bold text-moss"
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-moss text-cream font-bold text-sm">
-                    L
-                  </span>
+                  <div className="relative h-7 w-7 overflow-hidden rounded-lg shadow-sm flex-shrink-0">
+                    <Image
+                      src="/logo.png"
+                      alt="Lakubio Logo"
+                      fill
+                      sizes="28px"
+                      className="object-cover"
+                    />
+                  </div>
                   <span>Lakubio</span>
                 </Link>
                 <p className="text-xs text-ink/65 leading-relaxed">

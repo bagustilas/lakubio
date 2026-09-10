@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -86,8 +87,21 @@ function LoginFormContent() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12 sm:px-6">
       <div className="text-center mb-8">
-        <Link href="/" className="font-display text-2xl font-bold text-moss">
-          Lakubio
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2.5 font-display text-2xl font-bold text-moss group"
+        >
+          <div className="relative h-9 w-9 overflow-hidden rounded-xl shadow-sm group-hover:scale-105 transition-transform flex-shrink-0">
+            <Image
+              src="/logo.png"
+              alt="Lakubio Logo"
+              fill
+              sizes="36px"
+              className="object-cover"
+              priority
+            />
+          </div>
+          <span>Lakubio</span>
         </Link>
         <h1 className="mt-4 font-display text-2xl sm:text-3xl font-bold text-ink">
           {mode === "login" ? "Masuk ke Akun Toko" : "Lupa Kata Sandi"}

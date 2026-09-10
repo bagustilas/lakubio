@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   title: "Lakubio — Bikin Toko Online, Tinggal Isi Form",
   description:
     "Satu link untuk semua produkmu. Pelanggan pesan, langsung masuk WhatsApp. Tanpa install apa pun.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/logo.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
